@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fake News Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: vertical;
+        }
+        button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 5px;
+            display: none;
+        }
+        .real {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .fake {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Fake News Detection</h1>
+        <p>Enter a news article below to check if it's real or fake:</p>
+        <textarea id="newsInput" placeholder="Paste your news article here..."></textarea>
+        <button onclick="detectNews()">Detect Fake News</button>
+        <div class="loading" id="loading">Analyzing...</div>
+        <div class="result" id="result"></div>
+    </div>
+
+    <script>
+        async function detectNews() {
+            const text = document.getElementById('newsInput').value.trim();
+            if (!text) {
+                alert('Please enter some text to analyze.');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: text }),
+                });
+
+                const data = await response.json();
+
+                document.getElementById('loading').style.display = 'none';
+                const resultDiv = document.getElementById('result');
+                resultDiv.style.display = 'block';
+                resultDiv.className = data.prediction === 'Fake News' ? 'result fake' : 'result real';
+
+                let verificationInfo = '';
+                if (data.verification_method === 'Database Match') {
+                    verificationInfo = `<p><strong>Source:</strong> ${data.source}</p>`;
+                }
+
+                resultDiv.innerHTML = `
+                    <h3>${data.prediction}</h3>
+                    <p><strong>Confidence:</strong> ${(data.confidence * 100).toFixed(2)}%</p>
+                    <p><strong>Verification Method:</strong> ${data.verification_method}</p>
+                    ${verificationInfo}
+                    <p><strong>Sentiment:</strong> ${data.sentiment.toFixed(2)} (Polarity)</p>
+                    <p><strong>Subjectivity:</strong> ${data.subjectivity.toFixed(2)} (Subjectivity)</p>
+                `;
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert('An error occurred. Please try again.');
+            }
+        }
+    </script>
+</body>
+</html>
